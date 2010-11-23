@@ -1,0 +1,33 @@
+/* Meta Section */
+
+#meta_section {
+	display:none;
+	background:#f4f4eb;
+	border-bottom:1px solid #e5e5dd;
+	margin-bottom:25px;
+}
+
+#meta_section iframe {
+	height:auto;
+}
+
+/* Button */
+
+a.black {
+	background:#000;
+	background:-webkit-gradient(linear, left top, left bottom, from(#666), to(#333));
+	background:-moz-linear-gradient(-90deg, #666, #333);
+	color:#fff;
+	margin-right:10px;
+}
+
+a.black:hover {
+	background:#333;
+	background:-webkit-gradient(linear, left top, left bottom, from(#7F7F7F), to(#333));
+	background:-moz-linear-gradient(-90deg, #7F7F7F, #333);
+}
+
+a.black:active {
+	background:-webkit-gradient(linear, left top, left bottom, from(#333), to(#666));
+	background:-moz-linear-gradient(-90deg, #333, #666);
+}
