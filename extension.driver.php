@@ -39,10 +39,14 @@
 				)
 			);
 		}
-		
-		public function manipulateOutput($context) {
+
+		public function initialize() {
 			$this->sectionManager = new SectionManager($this->_Parent);
 			$this->callback = Administration::instance()->getPageCallback();
+		}
+		
+		public function manipulateOutput($context) {
+			$this->initialize();
 			
 			if ($this->inBlueprints()) {
 				$this->customizeEssentials($context);
@@ -52,6 +56,8 @@
 		}
 
 		public function appendResources($context) {
+			$this->initialize();
+			
 			if ($this->inPublish()) {
 				$section_handle = $this->callback['context']['section_handle'];
 				$section = $this->sectionFromHandle($section_handle);
