@@ -3,16 +3,9 @@
 	require_once(TOOLKIT . '/class.sectionmanager.php');
 
 	class extension_meta_section extends Extension {
-
-		var $sectionManager;
-		var $callback;
-
-		public function __construct($args){
-			$this->_Parent =& $args['parent'];
-
-			$this->sectionManager = new SectionManager($this->_Parent);
-			$this->callback = Administration::instance()->getPageCallback();
-		}
+		
+		public $sectionManager;
+		public $callback;
 		
 		public function about() {
 			return array(
@@ -48,10 +41,12 @@
 		}
 		
 		public function manipulateOutput($context) {
+			$this->sectionManager = new SectionManager($this->_Parent);
+			$this->callback = Administration::instance()->getPageCallback();
+			
 			if ($this->inBlueprints()) {
 				$this->customizeEssentials($context);
-			}
-			else if ($_REQUEST['ms_filtering'] === 'yes'){
+			} else {
 				$this->sendElementsToTrash($context);
 			}
 		}
@@ -62,10 +57,8 @@
 				$section = $this->sectionFromHandle($section_handle);
 				
 				$meta_section = $this->sectionManager->fetch($section->get('meta_section'));
-
-				if (!is_object($meta_section)){
-					return;
-				}
+				
+				if (!is_object($meta_section)) return;
 				
 				$handle = $meta_section->get('handle');
 				
@@ -79,7 +72,7 @@
 			$section = $context['section'];
 			$entry = $context['entry'];
 			
-			if ($section->get('static') === 'yes' && $_REQUEST['ms_filtering'] === 'yes'){
+			if ($section->get('static') === 'yes' && $_REQUEST['output-filtering'] === 'yes'){
 				$prepopulate_field_id = $prepopulate_value = NULL;
 				if(isset($_POST['prepopulate'])){
 					$prepopulate_field_id = array_shift(array_keys($_POST['prepopulate']));
@@ -91,7 +84,7 @@
 					URL,
 					$section->get('handle'),
 					$entry->get('id'),
-					(!is_null($prepopulate_field_id) ? ":{$prepopulate_field_id}:{$prepopulate_value}" : NULL) . "?ms_filtering=yes"
+					(!is_null($prepopulate_field_id) ? ":{$prepopulate_field_id}:{$prepopulate_value}" : NULL) . "?output-filtering=yes"
 				));
 			}
 		}
@@ -111,13 +104,15 @@
 		}
 		
 		public function customizeEssentials($context) {
+			// Get sections
+			$sectionManager = new SectionManager($this->_Parent);
+		    $sections = $sectionManager->fetch(NULL, 'ASC', 'name');
+
+			// Load HTML from context
 			$dom = @DOMDocument::loadHTML($context['output']);
 			$xpath = new DOMXPath($dom);
 			
 			$nav_group = $xpath->query("/html/body/form/fieldset/div/div[2]")->item(0);
-			
-			$sectionManager = new SectionManager($this->_Parent);
-		    $sections = $sectionManager->fetch(NULL, 'ASC', 'name');
 
 			$select = $dom->createElement('select');
 			$select->setAttribute('name', 'meta[meta_section]');
@@ -127,28 +122,35 @@
 
 			$current_section = $this->getSection();
 			$errors = Administration::instance()->Page->_errors;
-			
-			foreach ($sections as $section) {
-				if ($section->get('static') === 'yes') {
-					if (is_object($current_section) && $section->get('id') === $current_section->get('id')){
-						continue;
+
+			if (is_array($sections) && !empty($sections)) {
+				foreach ($sections as $section) {
+					if ($section->get('static') === 'yes') {
+						if (is_object($current_section) && $section->get('id') === $current_section->get('id')) continue;
+					
+						$option = $dom->createElement('option');
+						$option->setAttribute('value', $section->get('id'));
+					
+						if ((is_object($current_section) && $current_section->get('meta_section') === $section->get('id')) || 
+							(is_array($errors) && !empty($errors) && $_POST['meta']['meta_section'] === $section->get('id'))) {
+								$option->setAttribute('selected', 'selected');
+						}
+					
+						$option->appendChild(new DOMText($section->get('name')));
+						$select->appendChild($option);
 					}
-					
-					$option = $dom->createElement('option');
-					$option->setAttribute('value', $section->get('id'));
-					
-					if ((is_object($current_section) && $current_section->get('meta_section') === $section->get('id')) || 
-						(is_array($errors) && !empty($errors) && $_POST['meta']['meta_section'] === $section->get('id'))) {
-							$option->setAttribute('selected', 'selected');
-					}
-					
-					$option->appendChild(new DOMText($section->get('name')));
-					$select->appendChild($option);
 				}
 			}
 			
-			$label = $dom->createElement('label', 'Meta section');
+			$none_option_message = count($select->childNodes) == 1 ? __('No static sections available') : __('Please select a static section');
+			$none_option->appendChild(new DOMText($none_option_message));
+			
+			$label = $dom->createElement('label', 'Complementary section');
 			$label->appendChild($select);
+			
+			$label_tip = $dom->createElement('i');
+			$label_tip->appendChild(new DOMText('Can be viewed in the publish index page of this section'));
+			$label->appendChild($label_tip);
 			
 			$nav_group->appendChild($label);
 			
@@ -156,6 +158,8 @@
 		}
 		
 		public function sendElementsToTrash($context){
+			if ($_REQUEST['output-filtering'] != 'yes') return;
+			
 			$dom = @DOMDocument::loadHTML($context['output']);
 			$xpath = new DOMXPath($dom);
 
@@ -180,22 +184,19 @@
 			$form = $xpath->query("//form")->item(0);
 			$form->setAttribute('style', 'margin-top:0px; padding:0px 19px 0px 19px; min-height:100px;');
 
-			$new_form_url = $form->getAttribute('action') . '?ms_filtering=yes';
+			$new_form_url = $form->getAttribute('action') . '?output-filtering=yes';
 			$form->setAttribute('action', $new_form_url);
 			
 			$notice = $xpath->query("//p[@id='notice']")->item(0);
-			if ($notice) {
-				$notice->parentNode->removeChild($notice);
-				// $notice->setAttribute('style', 'margin:0px; position:absolute; left:0px; top:0px; width:100%;');
-				// $form->setAttribute('style', 'margin-top:0px; padding:35px 19px 0px 19px; min-height:100px;');
-			}
+
+			if ($notice) $notice->parentNode->removeChild($notice);
 			
 			$context['output'] = $dom->saveHTML();
 		}
 		
 		// Returns true if user is creating or editing a section
 		public function inBlueprints() {
-			return ($this->callback['driver'] === 'blueprintssections' && is_array($this->callback['context']));
+			return ($this->callback['driver'] === 'blueprintssections' && is_array($this->callback['context']) && !empty($this->callback['context']));
 		}
 		
 		public function inPublish() {

@@ -6,7 +6,7 @@
 		
 		var section_handle = $("script[src*='?section=']").attr("src").match("section=([A-Za-z0-9-_]+)$")[1];
 
-		var meta_section_url = Symphony.WEBSITE + '/symphony/publish/' + section_handle + '/?ms_filtering=yes';
+		var meta_section_url = Symphony.WEBSITE + '/symphony/publish/' + section_handle + '/?output-filtering=yes';
 
 		var iframe = $("<iframe/>", {src: meta_section_url, frameborder: 0, border: 0, width: "100%", height: "25%"});
 		iframe.appendTo(meta);
