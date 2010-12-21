@@ -10,8 +10,8 @@
 		public function about() {
 			return array(
 				'name' => 'Meta Section',
-				'version' => '0.1',
-				'release-date' => '2010-11-23',
+				'version' => '0.2',
+				'release-date' => '2010-12-21',
 				'author' => array(
 					'name' => 'Rainer Borene',
 					'website' => 'http://rainerborene.com',
