@@ -142,7 +142,7 @@
 				}
 			}
 			
-			$none_option_message = count($select->childNodes) == 1 ? __('No static sections available') : __('Please select a static section');
+			$none_option_message = $select->childNodes->length == 1 ? __('No static sections available') : __('Please select a static section');
 			$none_option->appendChild(new DOMText($none_option_message));
 			
 			$label = $dom->createElement('label', 'Complementary section');
